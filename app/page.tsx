@@ -1,69 +1,136 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
+import { PRODUCTOS } from '../data/productos';
+import TarjetaProducto from '../components/TarjetaProducto';
+import FormularioPedido from '../components/FormularioPedido';
 
 export default function Home() {
+  const [carrito, setCarrito] = useState<{ [key: number]: number }>({});
+  const [nombre, setNombre] = useState('');
+  const [tipoEntrega, setTipoEntrega] = useState('Para llevar');
+  const [metodoPago, setMetodoPago] = useState<'Efectivo' | 'Transferencia'>('Efectivo');
+  const [pagaCon, setPagaCon] = useState('');
+  const [notas, setNotas] = useState('');
+  const [categoriaActiva, setCategoriaActiva] = useState<'Todas' | 'Tacos' | 'Antojitos' | 'Bebidas'>('Todas');
+
+  const cambiarCantidad = (id: number, delta: number) => {
+    setCarrito((prev) => ({
+      ...prev,
+      [id]: Math.max(0, (prev[id] || 0) + delta),
+    }));
+  };
+
+  const calcularTotal = () => {
+    return PRODUCTOS.reduce((total, prod) => total + prod.precio * (carrito[prod.id] || 0), 0);
+  };
+
+  const generarMensajeWhatsApp = () => {
+    const lineas: string[] = [];
+    lineas.push('¡Hola! Quiero hacer un pedido:');
+    lineas.push('');
+    if (nombre) lineas.push(`👤 *Cliente:* ${nombre}`);
+    lineas.push(`📍 *Modalidad:* ${tipoEntrega}`);
+
+    let infoPago = `💳 *Pago:* ${metodoPago}`;
+    if (metodoPago === 'Efectivo' && pagaCon) {
+      infoPago += ` (Paga con $${pagaCon} MXN)`;
+    }
+    lineas.push(infoPago);
+
+    lineas.push('');
+    lineas.push('📋 *Pedido:*');
+
+    PRODUCTOS.filter((p) => (carrito[p.id] || 0) > 0).forEach((p) => {
+      lineas.push(`• ${carrito[p.id]}x ${p.nombre} ($${p.precio * carrito[p.id]} MXN)`);
+    });
+
+    lineas.push('');
+    if (notas) {
+      lineas.push(`📝 *Notas:* ${notas}`);
+      lineas.push('');
+    }
+    lineas.push(`*Total a pagar: $${calcularTotal()} MXN*`);
+
+    const textoFormateado = lineas.join('\n');
+    return `https://wa.me/5213120000000?text=${encodeURIComponent(textoFormateado)}`;
+  };
+
+  const productosFiltrados =
+    categoriaActiva === 'Todas'
+      ? PRODUCTOS
+      : PRODUCTOS.filter((p) => p.categoria === categoriaActiva);
+
+  const total = calcularTotal();
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main className="flex min-h-screen flex-col items-center justify-center p-6 bg-slate-900 text-white pb-12">
+      <h1 className="text-3xl font-bold mb-1 text-amber-400">Tacos El Universitario</h1>
+      <p className="text-slate-400 mb-6">Menú Digital interactivo</p>
+
+      {/* Categorías */}
+      <div className="flex gap-2 max-w-sm w-full mb-6 overflow-x-auto pb-1">
+        {(['Todas', 'Tacos', 'Antojitos', 'Bebidas'] as const).map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setCategoriaActiva(cat)}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              categoriaActiva === cat
+                ? 'bg-amber-400 text-slate-900'
+                : 'bg-slate-800 text-slate-400 border border-slate-700'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+{/* Lista de productos */}
+      <div className="flex flex-col gap-3 max-w-sm w-full mb-6">
+        {productosFiltrados.map((prod) => (
+          <TarjetaProducto
+            key={prod.id}
+            producto={prod}
+            cantidad={carrito[prod.id] || 0}
+            cambiarCantidad={cambiarCantidad}
+          />
+        ))}
+      </div>
+
+{/* Formulario de envío y pago */}
+      {total > 0 && (
+        <FormularioPedido
+          nombre={nombre}
+          setNombre={setNombre}
+          tipoEntrega={tipoEntrega}
+          setTipoEntrega={setTipoEntrega}
+          metodoPago={metodoPago}
+          setMetodoPago={setMetodoPago}
+          pagaCon={pagaCon}
+          setPagaCon={setPagaCon}
+          notas={notas}
+          setNotas={setNotas}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      )}
+
+      {/* Resumen final */}
+      <div className="max-w-sm w-full bg-slate-800 border border-slate-700 p-4 rounded-xl mb-4 flex justify-between items-center">
+        <span className="text-lg font-semibold">Total:</span>
+        <span className="text-2xl font-bold text-amber-400">${total} MXN</span>
+      </div>
+
+      {total > 0 ? (
+        <a
+          href={generarMensajeWhatsApp()}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full max-w-sm bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg text-center block"
+        >
+          Enviar pedido por WhatsApp 🚀
+        </a>
+      ) : (
+        <p className="text-slate-500 text-sm">Selecciona al menos un producto para pedir</p>
+      )}
+    </main>
   );
 }
