@@ -25,7 +25,7 @@ export default function Home() {
     return PRODUCTOS.reduce((total, prod) => total + prod.precio * (carrito[prod.id] || 0), 0);
   };
 
-  const generarMensajeWhatsApp = () => {
+const generarMensajeWhatsApp = () => {
     const lineas: string[] = [];
     lineas.push('¡Hola! Quiero hacer un pedido:');
     lineas.push('');
@@ -53,7 +53,7 @@ export default function Home() {
     lineas.push(`*Total a pagar: $${calcularTotal()} MXN*`);
 
     const textoFormateado = lineas.join('\n');
-    return `https://wa.me/5213120000000?text=${encodeURIComponent(textoFormateado)}`;
+    return `https://wa.me/523141255011?text=${encodeURIComponent(textoFormateado)}`;
   };
 
   const productosFiltrados =
