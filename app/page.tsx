@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { PRODUCTOS } from '../data/productos';
 import TarjetaProducto from '../components/TarjetaProducto';
 import FormularioPedido from '../components/FormularioPedido';
-const [direccion, setDireccion] = useState('');
+
 
 export default function Home() {
   const [carrito, setCarrito] = useState<{ [key: number]: number }>({});
@@ -14,6 +14,7 @@ export default function Home() {
   const [pagaCon, setPagaCon] = useState('');
   const [notas, setNotas] = useState('');
   const [categoriaActiva, setCategoriaActiva] = useState<'Todas' | 'Tacos' | 'Antojitos' | 'Bebidas'>('Todas');
+  const [direccion, setDireccion] = useState('');
 
   const cambiarCantidad = (id: number, delta: number) => {
     setCarrito((prev) => ({
