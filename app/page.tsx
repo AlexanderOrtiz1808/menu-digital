@@ -32,9 +32,10 @@ const generarMensajeWhatsApp = () => {
     if (nombre) lineas.push(`👤 *Cliente:* ${nombre}`);
     lineas.push(`📍 *Modalidad:* ${tipoEntrega}`);
 
-    let infoPago = `💳 *Pago:* ${metodoPago}`;
+let infoPago = `💳 *Pago:* ${metodoPago}`;
     if (metodoPago === 'Efectivo' && pagaCon) {
-      infoPago += ` (Paga con $${pagaCon} MXN)`;
+      const cambio = (parseFloat(pagaCon) || 0) - calcularTotal();
+      infoPago += ` (Paga con $${pagaCon} MXN${cambio >= 0 ? `, Cambio: $${cambio} MXN` : ''})`;
     }
     lineas.push(infoPago);
 
@@ -110,6 +111,7 @@ const generarMensajeWhatsApp = () => {
           setPagaCon={setPagaCon}
           notas={notas}
           setNotas={setNotas}
+          total={total}
         />
       )}
 

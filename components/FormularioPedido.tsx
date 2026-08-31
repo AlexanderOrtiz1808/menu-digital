@@ -9,93 +9,106 @@ interface Props {
   setPagaCon: (cantidad: string) => void;
   notas: string;
   setNotas: (notas: string) => void;
+  total: number; // <--- Agregamos esta prop
 }
 
 export default function FormularioPedido({
-  nombre, setNombre,
-  tipoEntrega, setTipoEntrega,
-  metodoPago, setMetodoPago,
-  pagaCon, setPagaCon,
-  notas, setNotas
+  nombre,
+  setNombre,
+  tipoEntrega,
+  setTipoEntrega,
+  metodoPago,
+  setMetodoPago,
+  pagaCon,
+  setPagaCon,
+  notas,
+  setNotas,
+  total,
 }: Props) {
+  const montoIngresado = parseFloat(pagaCon) || 0;
+  const cambio = montoIngresado - total;
+
   return (
     <div className="flex flex-col gap-3 max-w-sm w-full mb-6 bg-slate-800 border border-slate-700 p-4 rounded-xl">
-      <h2 className="text-md font-bold text-amber-400 text-left">Detalles del pedido</h2>
+      <h3 className="font-semibold text-amber-400 text-sm">Detalles del pedido</h3>
 
+      {/* Nombre */}
       <input
         type="text"
         placeholder="Tu nombre (opcional)"
         value={nombre}
         onChange={(e) => setNombre(e.target.value)}
-        className="bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-amber-400"
+        className="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-amber-400"
       />
 
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => setTipoEntrega('Para llevar')}
-          className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all ${
-            tipoEntrega === 'Para llevar'
-              ? 'bg-amber-400 text-slate-900 border-amber-400'
-              : 'bg-slate-900 text-slate-400 border-slate-700'
-          }`}
-        >
-          🛍️ Para llevar
-        </button>
-        <button
-          type="button"
-          onClick={() => setTipoEntrega('Comer aquí')}
-          className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all ${
-            tipoEntrega === 'Comer aquí'
-              ? 'bg-amber-400 text-slate-900 border-amber-400'
-              : 'bg-slate-900 text-slate-400 border-slate-700'
-          }`}
-        >
-          🍽️ Comer aquí
-        </button>
+      {/* Modalidad de entrega */}
+      <div className="grid grid-cols-2 gap-2">
+        {['Para llevar', 'Comer aquí'].map((opcion) => (
+          <button
+            key={opcion}
+            type="button"
+            onClick={() => setTipoEntrega(opcion)}
+            className={`py-2 text-xs font-bold rounded-xl border transition-all ${
+              tipoEntrega === opcion
+                ? 'bg-amber-400 text-slate-900 border-amber-400'
+                : 'bg-slate-900 text-slate-400 border-slate-700'
+            }`}
+          >
+            {opcion === 'Para llevar' ? '🥡 Para llevar' : '🍽️ Comer aquí'}
+          </button>
+        ))}
       </div>
 
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => setMetodoPago('Efectivo')}
-          className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all ${
-            metodoPago === 'Efectivo'
-              ? 'bg-amber-400 text-slate-900 border-amber-400'
-              : 'bg-slate-900 text-slate-400 border-slate-700'
-          }`}
-        >
-          💵 Efectivo
-        </button>
-        <button
-          type="button"
-          onClick={() => setMetodoPago('Transferencia')}
-          className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all ${
-            metodoPago === 'Transferencia'
-              ? 'bg-amber-400 text-slate-900 border-amber-400'
-              : 'bg-slate-900 text-slate-400 border-slate-700'
-          }`}
-        >
-          💳 Transferencia
-        </button>
+      {/* Método de pago */}
+      <div className="grid grid-cols-2 gap-2">
+        {(['Efectivo', 'Transferencia'] as const).map((metodo) => (
+          <button
+            key={metodo}
+            type="button"
+            onClick={() => setMetodoPago(metodo)}
+            className={`py-2 text-xs font-bold rounded-xl border transition-all ${
+              metodoPago === metodo
+                ? 'bg-amber-400 text-slate-900 border-amber-400'
+                : 'bg-slate-900 text-slate-400 border-slate-700'
+            }`}
+          >
+            {metodo === 'Efectivo' ? '💵 Efectivo' : '💳 Transferencia'}
+          </button>
+        ))}
       </div>
 
+      {/* Input de pago en efectivo y cálculo de cambio */}
       {metodoPago === 'Efectivo' && (
-        <input
-          type="number"
-          placeholder="¿Con cuánto pagas? (ej. 200)"
-          value={pagaCon}
-          onChange={(e) => setPagaCon(e.target.value)}
-          className="bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-amber-400"
-        />
+        <div className="flex flex-col gap-1.5">
+          <input
+            type="number"
+            placeholder="¿Con cuánto pagas? (ej. 200)"
+            value={pagaCon}
+            onChange={(e) => setPagaCon(e.target.value)}
+            className="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-amber-400"
+          />
+
+          {pagaCon !== '' && (
+            cambio >= 0 ? (
+              <p className="text-xs text-green-400 font-semibold px-1">
+                💵 Cambio a entregar: <span className="text-amber-400 font-bold">${cambio} MXN</span>
+              </p>
+            ) : (
+              <p className="text-xs text-red-400 font-medium px-1">
+                ⚠️ Falta ${(cambio * -1)} MXN para completar el total
+              </p>
+            )
+          )}
+        </div>
       )}
 
+      {/* Notas adicionales */}
       <input
         type="text"
         placeholder="Notas (ej. Sin cebolla)"
         value={notas}
         onChange={(e) => setNotas(e.target.value)}
-        className="bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-amber-400"
+        className="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-amber-400"
       />
     </div>
   );
