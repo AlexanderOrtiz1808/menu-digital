@@ -3,27 +3,21 @@ interface Props {
   setNombre: (nombre: string) => void;
   tipoEntrega: string;
   setTipoEntrega: (tipo: string) => void;
+  direccion: string;
+  setDireccion: (direccion: string) => void;
   metodoPago: string;
   setMetodoPago: (metodo: 'Efectivo' | 'Transferencia') => void;
   pagaCon: string;
   setPagaCon: (cantidad: string) => void;
   notas: string;
   setNotas: (notas: string) => void;
-  total: number; // <--- Agregamos esta prop
+  total: number;
 }
 
 export default function FormularioPedido({
-  nombre,
-  setNombre,
-  tipoEntrega,
-  setTipoEntrega,
-  metodoPago,
-  setMetodoPago,
-  pagaCon,
-  setPagaCon,
-  notas,
-  setNotas,
-  total,
+  nombre, setNombre, tipoEntrega, setTipoEntrega,
+  direccion, setDireccion, metodoPago, setMetodoPago,
+  pagaCon, setPagaCon, notas, setNotas, total,
 }: Props) {
   const montoIngresado = parseFloat(pagaCon) || 0;
   const cambio = montoIngresado - total;
@@ -32,7 +26,6 @@ export default function FormularioPedido({
     <div className="flex flex-col gap-3 max-w-sm w-full mb-6 bg-slate-800 border border-slate-700 p-4 rounded-xl">
       <h3 className="font-semibold text-amber-400 text-sm">Detalles del pedido</h3>
 
-      {/* Nombre */}
       <input
         type="text"
         placeholder="Tu nombre (opcional)"
@@ -41,23 +34,38 @@ export default function FormularioPedido({
         className="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-amber-400"
       />
 
-      {/* Modalidad de entrega */}
-      <div className="grid grid-cols-2 gap-2">
-        {['Para llevar', 'Comer aquí'].map((opcion) => (
+      {/* Modalidad de entrega (3 opciones) */}
+      <div className="grid grid-cols-3 gap-1.5">
+        {[
+          { id: 'Para llevar', label: '🥡 Llevar' },
+          { id: 'Comer aquí', label: '🍽️ Aquí' },
+          { id: 'A domicilio', label: '🛵 Domicilio' },
+        ].map((opcion) => (
           <button
-            key={opcion}
+            key={opcion.id}
             type="button"
-            onClick={() => setTipoEntrega(opcion)}
+            onClick={() => setTipoEntrega(opcion.id)}
             className={`py-2 text-xs font-bold rounded-xl border transition-all ${
-              tipoEntrega === opcion
+              tipoEntrega === opcion.id
                 ? 'bg-amber-400 text-slate-900 border-amber-400'
                 : 'bg-slate-900 text-slate-400 border-slate-700'
             }`}
           >
-            {opcion === 'Para llevar' ? '🥡 Para llevar' : '🍽️ Comer aquí'}
+            {opcion.label}
           </button>
         ))}
       </div>
+
+      {/* Campo para dirección (solo visible en A domicilio) */}
+      {tipoEntrega === 'A domicilio' && (
+        <input
+          type="text"
+          placeholder="Calle, número y colonia"
+          value={direccion}
+          onChange={(e) => setDireccion(e.target.value)}
+          className="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-amber-400"
+        />
+      )}
 
       {/* Método de pago */}
       <div className="grid grid-cols-2 gap-2">
@@ -77,7 +85,7 @@ export default function FormularioPedido({
         ))}
       </div>
 
-      {/* Input de pago en efectivo y cálculo de cambio */}
+      {/* Pago en efectivo y cambio */}
       {metodoPago === 'Efectivo' && (
         <div className="flex flex-col gap-1.5">
           <input
@@ -95,14 +103,13 @@ export default function FormularioPedido({
               </p>
             ) : (
               <p className="text-xs text-red-400 font-medium px-1">
-                ⚠️ Falta ${(cambio * -1)} MXN para completar el total
+                ⚠️ Falta ${(cambio * -1)} MXN para completar
               </p>
             )
           )}
         </div>
       )}
 
-      {/* Notas adicionales */}
       <input
         type="text"
         placeholder="Notas (ej. Sin cebolla)"

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { PRODUCTOS } from '../data/productos';
 import TarjetaProducto from '../components/TarjetaProducto';
 import FormularioPedido from '../components/FormularioPedido';
+const [direccion, setDireccion] = useState('');
 
 export default function Home() {
   const [carrito, setCarrito] = useState<{ [key: number]: number }>({});
@@ -31,6 +32,9 @@ const generarMensajeWhatsApp = () => {
     lineas.push('');
     if (nombre) lineas.push(`👤 *Cliente:* ${nombre}`);
     lineas.push(`📍 *Modalidad:* ${tipoEntrega}`);
+if (tipoEntrega === 'A domicilio' && direccion) {
+  lineas.push(`🏠 *Dirección:* ${direccion}`);
+}
 
 let infoPago = `💳 *Pago:* ${metodoPago}`;
     if (metodoPago === 'Efectivo' && pagaCon) {
@@ -100,19 +104,21 @@ let infoPago = `💳 *Pago:* ${metodoPago}`;
 
 {/* Formulario de envío y pago */}
       {total > 0 && (
-        <FormularioPedido
-          nombre={nombre}
-          setNombre={setNombre}
-          tipoEntrega={tipoEntrega}
-          setTipoEntrega={setTipoEntrega}
-          metodoPago={metodoPago}
-          setMetodoPago={setMetodoPago}
-          pagaCon={pagaCon}
-          setPagaCon={setPagaCon}
-          notas={notas}
-          setNotas={setNotas}
-          total={total}
-        />
+<FormularioPedido
+  nombre={nombre}
+  setNombre={setNombre}
+  tipoEntrega={tipoEntrega}
+  setTipoEntrega={setTipoEntrega}
+  direccion={direccion}
+  setDireccion={setDireccion}
+  metodoPago={metodoPago}
+  setMetodoPago={setMetodoPago}
+  pagaCon={pagaCon}
+  setPagaCon={setPagaCon}
+  notas={notas}
+  setNotas={setNotas}
+  total={total}
+/>
       )}
 
       {/* Resumen final */}
