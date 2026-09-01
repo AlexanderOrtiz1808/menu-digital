@@ -129,14 +129,20 @@ let infoPago = `💳 *Pago:* ${metodoPago}`;
       </div>
 
       {total > 0 ? (
-        <a
-          href={generarMensajeWhatsApp()}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-full max-w-sm bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg text-center block"
+        <button
+          onClick={() => {
+            if (!nombre.trim()) return;
+            window.open(generarMensajeWhatsApp(), '_blank');
+          }}
+          disabled={!nombre.trim() || (tipoEntrega === 'A domicilio' && !direccion.trim())}
+          className={`w-full max-w-sm py-3.5 px-4 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 ${
+            !nombre.trim() || (tipoEntrega === 'A domicilio' && !direccion.trim())
+              ? 'bg-slate-700 text-slate-400 cursor-not-allowed opacity-60'
+              : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30 active:scale-95'
+          }`}
         >
-          Enviar pedido por WhatsApp 🚀
-        </a>
+          🚀 Enviar pedido por WhatsApp
+        </button>
       ) : (
         <p className="text-slate-500 text-sm">Selecciona al menos un producto para pedir</p>
       )}
