@@ -129,8 +129,16 @@ let infoPago = `💳 *Pago:* ${metodoPago}`;
       {total > 0 ? (
         <div className="fixed bottom-0 left-0 w-full bg-slate-900/95 backdrop-blur-sm border-t border-slate-800 p-4 pb-6 z-50 flex justify-center shadow-[0_-15px_30px_-5px_rgba(0,0,0,0.6)]">
           <div className="w-full max-w-sm flex flex-col gap-3">
-            <div className="flex justify-between items-center px-2">
-              <span className="text-lg font-semibold text-slate-300">Total a pagar:</span>
+<div className="flex justify-between items-center px-2">
+              <div className="flex flex-col">
+                <span className="text-lg font-semibold text-slate-300">Total a pagar:</span>
+                <button 
+                  onClick={() => setCarrito({})} 
+                  className="text-sm text-red-400 hover:text-red-300 text-left mt-1 flex items-center gap-1 transition-colors"
+                >
+                  🗑️ Vaciar pedido
+                </button>
+              </div>
               <span className="text-2xl font-bold text-amber-400">${total} MXN</span>
             </div>
             
