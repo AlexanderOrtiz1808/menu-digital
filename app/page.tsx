@@ -122,29 +122,38 @@ let infoPago = `💳 *Pago:* ${metodoPago}`;
 />
       )}
 
-      {/* Resumen final */}
-      <div className="max-w-sm w-full bg-slate-800 border border-slate-700 p-4 rounded-xl mb-4 flex justify-between items-center">
-        <span className="text-lg font-semibold">Total:</span>
-        <span className="text-2xl font-bold text-amber-400">${total} MXN</span>
-      </div>
+{/* Espacio extra al final para que la barra flotante no tape el contenido */}
+      <div className="h-40"></div>
 
+      {/* Barra flotante inferior (solo aparece si hay productos) */}
       {total > 0 ? (
-        <button
-          onClick={() => {
-            if (!nombre.trim()) return;
-            window.open(generarMensajeWhatsApp(), '_blank');
-          }}
-          disabled={!nombre.trim() || (tipoEntrega === 'A domicilio' && !direccion.trim())}
-          className={`w-full max-w-sm py-3.5 px-4 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 ${
-            !nombre.trim() || (tipoEntrega === 'A domicilio' && !direccion.trim())
-              ? 'bg-slate-700 text-slate-400 cursor-not-allowed opacity-60'
-              : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30 active:scale-95'
-          }`}
-        >
-          🚀 Enviar pedido por WhatsApp
-        </button>
+        <div className="fixed bottom-0 left-0 w-full bg-slate-900/95 backdrop-blur-sm border-t border-slate-800 p-4 pb-6 z-50 flex justify-center shadow-[0_-15px_30px_-5px_rgba(0,0,0,0.6)]">
+          <div className="w-full max-w-sm flex flex-col gap-3">
+            <div className="flex justify-between items-center px-2">
+              <span className="text-lg font-semibold text-slate-300">Total a pagar:</span>
+              <span className="text-2xl font-bold text-amber-400">${total} MXN</span>
+            </div>
+            
+            <button
+              onClick={() => {
+                if (!nombre.trim()) return;
+                window.open(generarMensajeWhatsApp(), '_blank');
+              }}
+              disabled={!nombre.trim() || (tipoEntrega === 'A domicilio' && !direccion.trim())}
+              className={`w-full py-3.5 px-4 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 ${
+                !nombre.trim() || (tipoEntrega === 'A domicilio' && !direccion.trim())
+                  ? 'bg-slate-700 text-slate-400 cursor-not-allowed opacity-60'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30 active:scale-95'
+              }`}
+            >
+              🚀 Enviar pedido por WhatsApp
+            </button>
+          </div>
+        </div>
       ) : (
-        <p className="text-slate-500 text-sm">Selecciona al menos un producto para pedir</p>
+        <div className="text-center py-6 mb-10">
+          <p className="text-slate-500 text-sm">Selecciona al menos un producto para pedir</p>
+        </div>
       )}
     </main>
   );
