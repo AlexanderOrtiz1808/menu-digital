@@ -28,11 +28,20 @@ export default function FormularioPedido({
 
       <input
         type="text"
-        placeholder="Tu nombre (opcional)"
+        placeholder="Tu nombre *"
         value={nombre}
         onChange={(e) => setNombre(e.target.value)}
-        className="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-amber-400"
+        className={`bg-slate-900 border rounded-xl p-2.5 text-sm text-white focus:outline-none transition-all ${
+          !nombre.trim()
+            ? 'border-red-500/50 focus:border-red-500'
+            : 'border-slate-700 focus:border-amber-400'
+        }`}
       />
+      {!nombre.trim() && (
+        <p className="text-[11px] text-red-400 px-1 -mt-1">
+          ⚠️ Por favor ingresa tu nombre para continuar.
+        </p>
+      )}
 
       {/* Modalidad de entrega (3 opciones) */}
       <div className="grid grid-cols-3 gap-1.5">
