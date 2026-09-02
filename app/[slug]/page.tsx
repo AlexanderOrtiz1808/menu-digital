@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import TarjetaProducto from '../../components/TarjetaProducto';
 import FormularioPedido from '../../components/FormularioPedido';
 import { supabase } from '@/lib/supabase';
 
-export default function MenuRestaurante({ params }: { params: { slug: string } }) {
-  // Usamos "any" y reconstruimos la forma original de tus datos
+export default function MenuRestaurante({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
   const [productos, setProductos] = useState<any[]>([]);
   const [cargando, setCargando] = useState(true);
   
@@ -31,7 +31,7 @@ export default function MenuRestaurante({ params }: { params: { slug: string } }
       const { data: restaurante, error: errorRest } = await supabase
         .from('restaurants')
         .select('id, name')
-        .eq('slug', params.slug)
+        .eq('slug', slug)
         .single();
 
       if (errorRest || !restaurante) {
@@ -71,7 +71,7 @@ export default function MenuRestaurante({ params }: { params: { slug: string } }
     }
 
     obtenerDatos();
-  }, [params.slug]); // <-- Importante: le decimos que vuelva a ejecutar si cambia la URL
+  }, [slug]); // <-- Importante: le decimos que vuelva a ejecutar si cambia la URL
 
   // La función vuelve a recibir un "number"
   const cambiarCantidad = (id: number, delta: number) => {
