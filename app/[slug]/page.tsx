@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import TarjetaProducto from '../components/TarjetaProducto';
-import FormularioPedido from '../components/FormularioPedido';
+import TarjetaProducto from '../../components/TarjetaProducto';
+import FormularioPedido from '../../components/FormularioPedido';
 import { supabase } from '@/lib/supabase';
 
-export default function Home() {
+export default function MenuRestaurante({ params }: { params: { slug: string } }) {
   // Usamos "any" y reconstruimos la forma original de tus datos
   const [productos, setProductos] = useState<any[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -20,23 +20,44 @@ export default function Home() {
   const [notas, setNotas] = useState('');
   const [categoriaActiva, setCategoriaActiva] = useState<'Todas' | 'Tacos' | 'Antojitos' | 'Bebidas'>('Todas');
   const [direccion, setDireccion] = useState('');
+  const [restauranteNombre, setRestauranteNombre] = useState('Cargando menú...');
 
-  // 🔄 Cargar productos en vivo desde Supabase
+  // 🔄 Cargar productos del restaurante específico desde Supabase
   useEffect(() => {
-    async function obtenerProductos() {
+    async function obtenerDatos() {
       setCargando(true);
-      const { data, error } = await supabase
+      
+      // 1. Buscamos el ID del restaurante usando el "slug" de la URL
+      const { data: restaurante, error: errorRest } = await supabase
+        .from('restaurants')
+        .select('id, name')
+        .eq('slug', params.slug)
+        .single();
+
+      if (errorRest || !restaurante) {
+        console.error('Error al buscar restaurante:', errorRest);
+        setRestauranteNombre('Restaurante no encontrado 😢');
+        setCargando(false);
+        return;
+      }
+
+      // Si existe, actualizamos el título de la página
+      setRestauranteNombre(restaurante.name);
+
+      // 2. Buscamos SOLO los productos que le pertenecen a este restaurante
+      const { data: productosData, error: errorProd } = await supabase
         .from('products')
         .select('*')
+        .eq('restaurant_id', restaurante.id)
         .eq('is_available', true);
 
-      if (error) {
-        console.error('Error al obtener productos de Supabase:', error);
-      } else if (data) {
-        // EL TRUCO: Adaptamos los datos de Supabase a la forma exacta que esperan tus componentes
-        const productosAdaptados = data.map((item, index) => ({
-          id: index + 1,           // Asignamos un número temporal para evitar el error rojo
-          db_id: item.id,          // Guardamos el UUID real de la base de datos por si acaso
+      if (errorProd) {
+        console.error('Error al obtener productos:', errorProd);
+      } else if (productosData) {
+        // Adaptamos los datos como lo hacíamos antes
+        const productosAdaptados = productosData.map((item, index) => ({
+          id: index + 1,
+          db_id: item.id,
           nombre: item.name,
           precio: Number(item.price),
           descripcion: item.description,
@@ -45,11 +66,12 @@ export default function Home() {
         }));
         setProductos(productosAdaptados);
       }
+      
       setCargando(false);
     }
 
-    obtenerProductos();
-  }, []);
+    obtenerDatos();
+  }, [params.slug]); // <-- Importante: le decimos que vuelva a ejecutar si cambia la URL
 
   // La función vuelve a recibir un "number"
   const cambiarCantidad = (id: number, delta: number) => {
@@ -115,7 +137,7 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-6 bg-slate-900 text-white pb-12">
-      <h1 className="text-3xl font-bold mb-1 text-amber-400">Tacos El Universitario</h1>
+      <h1 className="text-3xl font-bold mb-1 text-amber-400">{restauranteNombre}</h1>
       <p className="text-slate-400 mb-6">Menú Digital interactivo</p>
 
       {/* Categorías */}
