@@ -13,6 +13,22 @@ export default function AdminDashboard() {
   const [nombre, setNombre] = useState('');
   const [precio, setPrecio] = useState('');
   const [categoria, setCategoria] = useState('Tacos');
+  const [idEdicion, setIdEdicion] = useState<string | null>(null);
+  const [necesitaOnboarding, setNecesitaOnboarding] = useState(false);
+  const [nombreRestaurante, setNombreRestaurante] = useState('');
+  const prepararEdicion = (producto: any) => {
+    setNombre(producto.name);
+    setPrecio(producto.price);
+    setCategoria(producto.category);
+    setIdEdicion(producto.id);
+  };
+
+  const cancelarEdicion = () => {
+    setNombre('');
+    setPrecio('');
+    setCategoria('Tacos');
+    setIdEdicion(null);
+  };
 
   const router = useRouter();
 
@@ -36,10 +52,11 @@ export default function AdminDashboard() {
       .from('restaurants')
       .select('*')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
-    if (restError || !restData) {
-      console.error('Error al obtener restaurante:', restError);
+    if (!restData) {
+      // Si no hay restaurante, activamos el onboarding
+      setNecesitaOnboarding(true);
       setCargando(false);
       return;
     }
@@ -58,24 +75,73 @@ export default function AdminDashboard() {
 
   const agregarProducto = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nombre || !precio || !restaurante) return;
 
-    const { data, error } = await supabase.from('products').insert([
-      {
-        restaurant_id: restaurante.id,
-        name: nombre,
-        price: parseFloat(precio),
-        category: categoria,
-      },
-    ]);
+    if (idEdicion) {
+      // MODO EDICIÓN (UPDATE)
+      const { error } = await supabase
+        .from('products')
+        .update({
+          name: nombre,
+          price: parseFloat(precio),
+          category: categoria,
+        })
+        .eq('id', idEdicion);
+
+      if (error) {
+        console.error('Error al actualizar:', error);
+        alert('Error al actualizar el platillo');
+      } else {
+        cancelarEdicion(); // Limpia el formulario y quita el modo edición
+        cargarDatosAdmin(); // Recarga la lista para ver los cambios
+      }
+    } else {
+      // MODO CREACIÓN (INSERT) - Lo que ya tenías
+      const { error } = await supabase
+        .from('products')
+        .insert([
+          {
+            restaurant_id: restaurante.id,
+            name: nombre,
+            price: parseFloat(precio),
+            category: categoria, 
+          },
+        ]);
+
+      if (error) {
+        console.error('Error al guardar:', error);
+        alert('Error al crear el platillo');
+      } else {
+        setNombre('');
+        setPrecio('');
+        setCategoria('Tacos');
+        cargarDatosAdmin();
+      }
+    }
+  };
+  const crearPerfilRestaurante = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCargando(true);
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    // Generar un slug (ej: "Mi Taquería" -> "mi-taqueria")
+    const slug = nombreRestaurante
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
+
+    const { error } = await supabase
+      .from('restaurants')
+      .insert([
+        { name: nombreRestaurante, slug, user_id: user?.id }
+      ]);
 
     if (error) {
-      console.error('Error detallado de Supabase:', error);
-      alert(`Error de Supabase: ${error.message}`);
+      alert('Hubo un error al crear tu restaurante.');
+      setCargando(false);
     } else {
-      setNombre('');
-      setPrecio('');
-      cargarDatosAdmin();
+      setNecesitaOnboarding(false);
+      cargarDatosAdmin(); // Recarga todo para mostrar el panel normal
     }
   };
 
@@ -83,11 +149,56 @@ export default function AdminDashboard() {
     await supabase.auth.signOut();
     router.push('/login');
   };
+  const descargarQR = async () => {
+    if (!restaurante?.slug) return;
+
+    // Obtiene el dominio actual en el que está corriendo la app
+    const urlMenu = `${window.location.origin}/${restaurante.slug}`;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(urlMenu)}`;
+
+    try {
+      const response = await fetch(qrUrl);
+      const blob = await response.blob();
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `QR-${restaurante.slug}.png`;
+      link.click();
+    } catch (err) {
+      alert('Error al descargar el código QR');
+    }
+  };
 
   if (cargando) {
     return (
       <main className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
         <p>Cargando tu panel de administración...</p>
+      </main>
+    );
+  }
+  if (necesitaOnboarding) {
+    return (
+      <main className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-6">
+        <div className="bg-slate-800 p-8 rounded-xl border border-slate-700 max-w-md w-full text-center">
+          <h1 className="text-3xl font-bold text-amber-400 mb-2">¡Bienvenido! 🎉</h1>
+          <p className="text-slate-400 mb-6">Para comenzar a crear tu menú digital, dinos cómo se llama tu negocio.</p>
+          
+          <form onSubmit={crearPerfilRestaurante} className="space-y-4">
+            <input
+              type="text"
+              placeholder="Ej. Taquería El Paisa"
+              value={nombreRestaurante}
+              onChange={(e) => setNombreRestaurante(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-amber-400"
+              required
+            />
+            <button
+              type="submit"
+              className="w-full bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-3 rounded-lg transition-colors"
+            >
+              Crear mi menú
+            </button>
+          </form>
+        </div>
       </main>
     );
   }
@@ -113,17 +224,30 @@ export default function AdminDashboard() {
           <h1 className="text-3xl font-bold text-amber-400">{restaurante?.name || 'Mi Restaurante'}</h1>
           <p className="text-slate-400 text-sm">Slug actual: /{restaurante?.slug}</p>
         </div>
-        <button
-          onClick={cerrarSesion}
-          className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm px-4 py-2 rounded-lg border border-slate-700"
-        >
-          Cerrar Sesión
-        </button>
+        <div className="flex items-center gap-3">
+  <button
+    type="button"
+    onClick={descargarQR}
+    className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2 px-4 rounded-lg text-sm transition-colors flex items-center gap-2"
+  >
+    <span>📱</span> Descargar QR
+  </button>
+
+  <button
+    type="button"
+    onClick={cerrarSesion}
+    className="bg-slate-700 hover:bg-slate-600 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors"
+  >
+    Cerrar Sesión
+  </button>
+</div>
       </div>
 
       {/* Formulario para agregar productos */}
       <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 mb-8">
-        <h2 className="text-xl font-bold mb-4 text-white">Agregar Nuevo Platillo</h2>
+        <h2 className="text-xl font-bold mb-4 text-white">
+  {idEdicion ? '✏️ Editar Platillo' : 'Agregar Nuevo Platillo'}
+</h2>
         <form onSubmit={agregarProducto} className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <input
             type="text"
@@ -151,12 +275,24 @@ export default function AdminDashboard() {
             <option value="Antojitos">Antojitos</option>
             <option value="Bebidas">Bebidas</option>
           </select>
-          <button
-            type="submit"
-            className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2 rounded-lg"
-          >
-            + Guardar Platillo
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2 px-4 rounded-lg flex-1 transition-colors text-sm"
+            >
+              {idEdicion ? 'Actualizar' : '+ Guardar'}
+            </button>
+            
+            {idEdicion && (
+              <button
+                type="button"
+                onClick={cancelarEdicion}
+                className="bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm"
+              >
+                Cancelar
+              </button>
+            )}
+          </div>
         </form>
       </div>
 
@@ -176,8 +312,20 @@ export default function AdminDashboard() {
               </div>
               
               {/* Contenedor del precio y el botón juntos */}
-              <div className="flex items-center gap-4">
-                <p className="font-bold text-amber-400 text-xl">${prod.price} MXN</p>
+              {/* Lado derecho: Precio y Botones */}
+              <div className="flex items-center gap-2">
+                <p className="font-bold text-amber-400 text-xl mr-2">${prod.price} MXN</p>
+                
+                {/* Botón de Editar */}
+                <button
+                  onClick={() => prepararEdicion(prod)}
+                  className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 p-2 rounded-lg text-sm border border-blue-500/30 transition-colors"
+                  title="Editar platillo"
+                >
+                  ✏️
+                </button>
+
+                {/* Botón de Eliminar */}
                 <button
                   onClick={() => eliminarProducto(prod.id)}
                   className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-lg text-sm border border-red-500/30 transition-colors"

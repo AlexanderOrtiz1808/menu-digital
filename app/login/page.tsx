@@ -10,22 +10,39 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
   const router = useRouter();
+  const [esRegistro, setEsRegistro] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setCargando(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    if (esRegistro) {
+      // REGISTRO
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
 
-    if (error) {
-      setError('Credenciales incorrectas. Verifica tu correo y contraseña.');
-      setCargando(false);
+      if (error) {
+        setError(error.message);
+        setCargando(false);
+      } else {
+        router.push('/admin');
+      }
     } else {
-      router.push('/admin');
+      // INICIO DE SESIÓN
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setError('Credenciales incorrectas. Verifica tu correo y contraseña.');
+        setCargando(false);
+      } else {
+        router.push('/admin');
+      }
     }
   };
 
@@ -71,9 +88,19 @@ export default function LoginPage() {
             disabled={cargando}
             className="w-full bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2.5 rounded-lg transition-colors disabled:opacity-50"
           >
-            {cargando ? 'Ingresando...' : 'Iniciar Sesión'}
+            {cargando ? 'Cargando...' : esRegistro ? 'Crear Cuenta' : 'Iniciar Sesión'}
           </button>
         </form>
+        <button
+          type="button"
+          onClick={() => {
+            setEsRegistro(!esRegistro);
+            setError(null);
+          }}
+          className="mt-4 text-sm text-amber-400 hover:underline w-full text-center block"
+        >
+          {esRegistro ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate gratis'}
+        </button>
       </div>
     </main>
   );
