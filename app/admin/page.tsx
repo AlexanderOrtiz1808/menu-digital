@@ -91,6 +91,19 @@ export default function AdminDashboard() {
       </main>
     );
   }
+  const eliminarProducto = async (id: string) => {
+    const confirmacion = confirm('¿Estás seguro de que deseas eliminar este platillo?');
+    if (!confirmacion) return;
+
+    const { error } = await supabase.from('products').delete().eq('id', id);
+
+    if (error) {
+      console.error('Error al eliminar:', error);
+      alert('Error al eliminar el platillo');
+    } else {
+      cargarDatosAdmin(); // Esto recargará la lista automáticamente
+    }
+  };
 
   return (
     <main className="min-h-screen bg-slate-900 text-white p-6 max-w-4xl mx-auto">
@@ -149,7 +162,6 @@ export default function AdminDashboard() {
 
       {/* Lista de productos */}
       <div>
-        <h2 className="text-xl font-bold mb-4 text-white">Tus Platillos Registrados</h2>
         <div className="space-y-3">
           {productos.map((prod) => (
             <div
@@ -162,7 +174,19 @@ export default function AdminDashboard() {
                   {prod.category}
                 </span>
               </div>
-              <p className="font-bold text-amber-400 text-xl">${prod.price} MXN</p>
+              
+              {/* Contenedor del precio y el botón juntos */}
+              <div className="flex items-center gap-4">
+                <p className="font-bold text-amber-400 text-xl">${prod.price} MXN</p>
+                <button
+                  onClick={() => eliminarProducto(prod.id)}
+                  className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-lg text-sm border border-red-500/30 transition-colors"
+                  title="Eliminar platillo"
+                >
+                  🗑️
+                </button>
+              </div>
+
             </div>
           ))}
         </div>
