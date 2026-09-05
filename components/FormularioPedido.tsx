@@ -5,6 +5,8 @@ interface Props {
   setTipoEntrega: (tipo: string) => void;
   direccion: string;
   setDireccion: (direccion: string) => void;
+  ubicacion: string; 
+  setUbicacion: (ubicacion: string) => void; 
   metodoPago: string;
   setMetodoPago: (metodo: 'Efectivo' | 'Transferencia') => void;
   pagaCon: string;
@@ -16,8 +18,9 @@ interface Props {
 
 export default function FormularioPedido({
   nombre, setNombre, tipoEntrega, setTipoEntrega,
-  direccion, setDireccion, metodoPago, setMetodoPago,
-  pagaCon, setPagaCon, notas, setNotas, total,
+  direccion, setDireccion, ubicacion, setUbicacion, 
+  metodoPago, setMetodoPago, pagaCon, setPagaCon, 
+  notas, setNotas, total,
 }: Props) {
   const montoIngresado = parseFloat(pagaCon) || 0;
   const cambio = montoIngresado - total;
@@ -47,7 +50,7 @@ export default function FormularioPedido({
       <div className="grid grid-cols-3 gap-1.5">
         {[
           { id: 'Para llevar', label: '🥡 Llevar' },
-          { id: 'Comer aquí', label: '🍽️ Aquí' },
+          { id: 'Aquí', label: '🍽️ Aquí' },
           { id: 'A domicilio', label: '🛵 Domicilio' },
         ].map((opcion) => (
           <button
@@ -65,15 +68,39 @@ export default function FormularioPedido({
         ))}
       </div>
 
-      {/* Campo para dirección (solo visible en A domicilio) */}
+      {/* 1. Campo para ubicación / número de mesa (solo visible en "Aquí") */}
+      {tipoEntrega === 'Aquí' && (
+        <div className="mt-1">
+          <input
+            type="text"
+            placeholder="¿En qué mesa o zona estás? (ej. Mesa 4) *"
+            value={ubicacion}
+            onChange={(e) => setUbicacion(e.target.value)}
+            className={`w-full bg-slate-900 border rounded-xl p-2.5 text-sm text-white focus:outline-none transition-all ${
+              !ubicacion.trim()
+                ? 'border-red-500/50 focus:border-red-500'
+                : 'border-slate-700 focus:border-amber-400'
+            }`}
+          />
+          {!ubicacion.trim() && (
+            <p className="text-[11px] text-red-400 px-1 mt-1">
+              ⚠️ Ingresa el número de mesa o descripción de tu lugar.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* 2. Campo para dirección (solo visible en "A domicilio") */}
       {tipoEntrega === 'A domicilio' && (
-        <input
-          type="text"
-          placeholder="Calle, número y colonia"
-          value={direccion}
-          onChange={(e) => setDireccion(e.target.value)}
-          className="bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-amber-400"
-        />
+        <div className="mt-1">
+          <input
+            type="text"
+            placeholder="Calle, número y colonia *"
+            value={direccion}
+            onChange={(e) => setDireccion(e.target.value)}
+            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-amber-400"
+          />
+        </div>
       )}
 
       {/* Método de pago */}

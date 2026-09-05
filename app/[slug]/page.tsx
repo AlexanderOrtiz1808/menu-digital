@@ -21,6 +21,7 @@ export default function MenuRestaurante({ params }: { params: Promise<{ slug: st
   const [categoriaActiva, setCategoriaActiva] = useState<'Todas' | 'Tacos' | 'Antojitos' | 'Bebidas'>('Todas');
   const [direccion, setDireccion] = useState('');
   const [restauranteNombre, setRestauranteNombre] = useState('Cargando menú...');
+  const [ubicacion, setUbicacion] = useState('');
 
   // 🔄 Cargar productos del restaurante específico desde Supabase
   useEffect(() => {
@@ -86,39 +87,54 @@ export default function MenuRestaurante({ params }: { params: Promise<{ slug: st
   };
 
   const generarMensajeWhatsApp = () => {
-    const lineas: string[] = [];
-    lineas.push('¡Hola! Quiero hacer un pedido:');
-    lineas.push('');
-    if (nombre) lineas.push(`👤 *Cliente:* ${nombre}`);
+  const lineas: string[] = [];
+  lineas.push('¡Hola! Quiero hacer un pedido:');
+  lineas.push('');
+  if (nombre) lineas.push(`👤 *Cliente:* ${nombre}`);
+  
+  // 1. Aquí agregamos la validación para mostrar la mesa si es "Comer aquí"
+  if ((tipoEntrega === 'Aquí' || tipoEntrega === 'Comer aquí') && ubicacion.trim()) {
+    lineas.push(`📍 *Modalidad:* ${tipoEntrega} (Ubicación: ${ubicacion})`);
+  } else {
     lineas.push(`📍 *Modalidad:* ${tipoEntrega}`);
-    if (tipoEntrega === 'A domicilio' && direccion) {
-      lineas.push(`🏠 *Dirección:* ${direccion}`);
-    }
+  }
 
-    let infoPago = `💳 *Pago:* ${metodoPago}`;
-    if (metodoPago === 'Efectivo' && pagaCon) {
-      const cambio = (parseFloat(pagaCon) || 0) - calcularTotal();
-      infoPago += ` (Paga con $${pagaCon} MXN${cambio >= 0 ? `, Cambio: $${cambio} MXN` : ''})`;
-    }
-    lineas.push(infoPago);
+  if (tipoEntrega === 'A domicilio' && direccion) {
+    lineas.push(`🏠 *Dirección:* ${direccion}`);
+  }
 
+  let infoPago = `💳 *Pago:* ${metodoPago}`;
+  if (metodoPago === 'Efectivo' && pagaCon) {
+    const cambio = (parseFloat(pagaCon) || 0) - calcularTotal();
+    infoPago += ` (Paga con $${pagaCon} MXN${cambio > 0 ? `, Cambio: $${cambio} MXN` : ''})`;
+  }
+  lineas.push(infoPago);
+
+  lineas.push('');
+  lineas.push('📋 *Pedido:*');
+  
+  // Adaptado a tu lógica de carrito
+  productos.filter((p) => (carrito[p.id] || 0) > 0).forEach((p) => {
+    lineas.push(`• ${carrito[p.id]}x ${p.nombre} ($${p.precio * carrito[p.id]} MXN)`);
+  });
+
+  if (notas.trim()) {
     lineas.push('');
-    lineas.push('📋 *Pedido:*');
+    lineas.push(`📝 *Notas:* ${notas}`);
+  }
 
-    productos.filter((p) => (carrito[p.id] || 0) > 0).forEach((p) => {
-      lineas.push(`• ${carrito[p.id]}x ${p.nombre} ($${p.precio * carrito[p.id]} MXN)`);
-    });
+  lineas.push('');
+  lineas.push(`*Total a pagar: $${calcularTotal()} MXN*`);
 
+  // 2. Aquí agregamos la advertencia logística para la cocina
+  if (tipoEntrega === 'Aquí') {
     lineas.push('');
-    if (notas) {
-      lineas.push(`📝 *Notas:* ${notas}`);
-      lineas.push('');
-    }
-    lineas.push(`*Total a pagar: $${calcularTotal()} MXN*`);
+    lineas.push('⚠️ *Aviso para el restaurante:* Por favor, validar la mesa antes de preparar la comanda.');
+  }
 
-    const textoFormateado = lineas.join('\n');
-    return `https://wa.me/523141255011?text=${encodeURIComponent(textoFormateado)}`;
-  };
+  const textoFormateado = lineas.join('\n');
+  return `https://wa.me/523141255011?text=${encodeURIComponent(textoFormateado)}`;
+};
 
   const productosFiltrados =
     categoriaActiva === 'Todas'
@@ -176,20 +192,22 @@ export default function MenuRestaurante({ params }: { params: Promise<{ slug: st
       {/* Formulario de envío y pago */}
       {total > 0 && (
         <FormularioPedido
-          nombre={nombre}
-          setNombre={setNombre}
-          tipoEntrega={tipoEntrega}
-          setTipoEntrega={setTipoEntrega}
-          direccion={direccion}
-          setDireccion={setDireccion}
-          metodoPago={metodoPago}
-          setMetodoPago={setMetodoPago}
-          pagaCon={pagaCon}
-          setPagaCon={setPagaCon}
-          notas={notas}
-          setNotas={setNotas}
-          total={total}
-        />
+  nombre={nombre}
+  setNombre={setNombre}
+  tipoEntrega={tipoEntrega}
+  setTipoEntrega={setTipoEntrega}
+  direccion={direccion}
+  setDireccion={setDireccion}
+  ubicacion={ubicacion}
+  setUbicacion={setUbicacion}
+  metodoPago={metodoPago}
+  setMetodoPago={setMetodoPago}
+  pagaCon={pagaCon}
+  setPagaCon={setPagaCon}
+  notas={notas}
+  setNotas={setNotas}
+  total={total}
+/>
       )}
 
       {/* Espacio extra al final para que la barra flotante no tape el contenido */}
@@ -213,19 +231,23 @@ export default function MenuRestaurante({ params }: { params: Promise<{ slug: st
             </div>
             
             <button
-              onClick={() => {
-                if (!nombre.trim()) return;
-                window.open(generarMensajeWhatsApp(), '_blank');
-              }}
-              disabled={!nombre.trim() || (tipoEntrega === 'A domicilio' && !direccion.trim())}
-              className={`w-full py-3.5 px-4 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 ${
-                !nombre.trim() || (tipoEntrega === 'A domicilio' && !direccion.trim())
-                  ? 'bg-slate-700 text-slate-400 cursor-not-allowed opacity-60'
-                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30 active:scale-95'
-              }`}
-            >
-              🚀 Enviar pedido por WhatsApp
-            </button>
+  onClick={() => {
+    if (!nombre.trim()) return;
+    window.open(generarMensajeWhatsApp(), '_blank');
+  }}
+  disabled={
+  !nombre.trim() || 
+  (tipoEntrega === 'A domicilio' && !direccion.trim()) ||
+  ((tipoEntrega === 'Comer aquí' || tipoEntrega === 'Aquí') && !ubicacion.trim())
+}
+  className={`w-full py-3.5 px-4 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2
+    ${!nombre.trim() || (tipoEntrega === 'A domicilio' && !direccion.trim()) || (tipoEntrega === 'Comer aquí' && !ubicacion.trim())
+      ? 'bg-slate-700 text-slate-400 cursor-not-allowed opacity-60'
+      : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/30 active:scale-95'
+    }`}
+>
+  🚀 Enviar pedido por WhatsApp
+</button>
           </div>
         </div>
       ) : (
